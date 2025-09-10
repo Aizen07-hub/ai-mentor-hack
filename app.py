@@ -27,7 +27,8 @@ authenticator = stauth.Authenticate(
     cookie_expiry_days=0      # expires when browser closes
 )
 
-name, authentication_status, username = authenticator.login("Login", "main")
+name, authentication_status, username = authenticator.login("Login", location="main")
+
 
 if authentication_status == False:
     st.error("❌ Invalid ID or password")
