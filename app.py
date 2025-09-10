@@ -6,6 +6,32 @@ from io import BytesIO
 
 st.set_page_config(page_title="AI Mentor", layout="wide")
 
+names = ["Aziz", "Fasih", "Fazil"]
+usernames = ["aziz123", "fasih123", "fazil123"]
+passwords = ["1234", "1234", "1234"]  # <-- hackathon demo passwords
+
+authenticator = stauth.Authenticate(
+    dict(zip(usernames, names)),  # mapping
+    usernames,
+    passwords,
+    "ai_mentor_dashboard", "abcdef", cookie_expiry_days=0
+)
+
+name, authentication_status, username = authenticator.login("Login", "main")
+
+if authentication_status == False:
+    st.error("❌ Invalid ID or password")
+elif authentication_status == None:
+    st.warning("Please enter your ID and password")
+elif authentication_status:
+    # ---------------- MAIN APP STARTS ----------------
+    authenticator.logout("Logout", "sidebar")
+    st.sidebar.success(f"Welcome {name} 👋")
+    
+    st.title("🎓 AI Mentor - University Dashboard")
+    st.write("Prototype that automates mentor tasks: progress tracking, attendance, parent communication, and career guidance.")
+
+
 # -------- Sample Data --------
 def create_sample_df():
     data = {
