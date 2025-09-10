@@ -29,19 +29,17 @@ authenticator = stauth.Authenticate(
 
 name, authentication_status, username = authenticator.login("Login", location="main")
 
-
 if authentication_status == False:
     st.error("❌ Invalid ID or password")
 elif authentication_status == None:
     st.warning("Please enter your ID and password")
 elif authentication_status:
-    authenticator.logout("Logout", "sidebar")
+    authenticator.logout("Logout", location="sidebar")
     st.sidebar.success(f"Welcome {name} 👋")
     
     st.title("🎓 AI Mentor - University Dashboard")
     st.write("Now you can see the full dashboard.")
-    # 👉 paste your existing Dashboard/Reports/QR/Prediction/Quiz tabs code here
-
+    # 👉 dashboard code goes here
 # -------- Sample Data --------
 def create_sample_df():
     data = {
