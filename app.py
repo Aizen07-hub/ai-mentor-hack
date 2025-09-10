@@ -3,18 +3,28 @@ import pandas as pd
 import numpy as np
 import qrcode
 from io import BytesIO
+import streamlit_authenticator as stauth   # ✅ Correct import
+
 
 st.set_page_config(page_title="AI Mentor", layout="wide")
 
+# ---------------- LOGIN SYSTEM ----------------
 names = ["Aziz", "Fasih", "Fazil"]
-usernames = ["aziz123", "fasih123", "fazil123"]
-passwords = ["1234", "1234", "1234"]  # <-- hackathon demo passwords
+usernames = ["aziz", "fasih", "fazil"]
+passwords = ["1234", "1234", "1234"]  # demo-only passwords
+
+credentials = {
+    "usernames": {
+        usernames[i]: {"name": names[i], "password": passwords[i]}
+        for i in range(len(usernames))
+    }
+}
 
 authenticator = stauth.Authenticate(
-    dict(zip(usernames, names)),  # mapping
-    usernames,
-    passwords,
-    "ai_mentor_dashboard", "abcdef", cookie_expiry_days=0
+    credentials,
+    "ai_mentor_dashboard",    # cookie name
+    "abcdef",                 # signature key
+    cookie_expiry_days=0      # expires when browser closes
 )
 
 name, authentication_status, username = authenticator.login("Login", "main")
@@ -24,13 +34,12 @@ if authentication_status == False:
 elif authentication_status == None:
     st.warning("Please enter your ID and password")
 elif authentication_status:
-    # ---------------- MAIN APP STARTS ----------------
     authenticator.logout("Logout", "sidebar")
     st.sidebar.success(f"Welcome {name} 👋")
     
     st.title("🎓 AI Mentor - University Dashboard")
-    st.write("Prototype that automates mentor tasks: progress tracking, attendance, parent communication, and career guidance.")
-
+    st.write("Now you can see the full dashboard.")
+    # 👉 paste your existing Dashboard/Reports/QR/Prediction/Quiz tabs code here
 
 # -------- Sample Data --------
 def create_sample_df():
