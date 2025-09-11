@@ -49,28 +49,45 @@ menu = st.sidebar.radio(
 if menu == "Dashboard":
     st.header("📊 Student Dashboard")
 
+    # Example data
     data = {
         "Semester": [1, 2, 3, 4],
         "CGPA": [7.5, 8.2, 7.9, 8.5],
-        "Attendance": [82, 85, 79, 88]
+        "Attendance": [82, 85, 79, 88]  # percentage
     }
     df = pd.DataFrame(data)
 
     col1, col2 = st.columns(2)
 
+    # CGPA line graph
     with col1:
-        st.subheader("CGPA Progress")
-        st.line_chart(df.set_index("Semester")["CGPA"])
-
-    with col2:
-        st.subheader("Attendance Scatter Plot")
+        st.subheader("📈 CGPA Progress (Line Chart)")
         fig, ax = plt.subplots()
-        ax.scatter(df["Semester"], df["Attendance"], color="blue", s=100, alpha=0.7, edgecolors="black")
+        ax.plot(df["Semester"], df["CGPA"], marker="o", linestyle="-", color="green")
         ax.set_xlabel("Semester")
-        ax.set_ylabel("Attendance %")
+        ax.set_ylabel("CGPA")
+        ax.set_title("CGPA Over Semesters")
         st.pyplot(fig)
 
-    st.info("Use the sidebar to explore reports, attendance, and career tools.")
+    # Attendance pie chart
+    with col2:
+        st.subheader("📊 Attendance (Pie Chart)")
+        latest_attendance = df["Attendance"].iloc[-1]  # last semester attendance
+        attended = latest_attendance
+        missed = 100 - latest_attendance
+
+        fig2, ax2 = plt.subplots()
+        ax2.pie(
+            [attended, missed],
+            labels=["Attended (%)", "Missed (%)"],
+            autopct="%1.1f%%",
+            colors=["#4CAF50", "#FF5252"],
+            startangle=90
+        )
+        ax2.axis("equal")  # Equal aspect ratio makes pie chart circular
+        st.pyplot(fig2)
+
+    st.info("CGPA shows trend over semesters, Attendance shows latest record.")
 
 # ------------------------
 # 2. Student Report
