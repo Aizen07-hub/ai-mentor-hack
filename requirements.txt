@@ -1,5 +1,5 @@
 streamlit
 pandas
-numpy
-qrcode[pil]
-streamlit-authenticator==0.2.2
+matplotlib
+qrcode
+pillow
