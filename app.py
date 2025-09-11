@@ -7,35 +7,6 @@ import streamlit_authenticator as stauth
 
 st.set_page_config(page_title="AI Mentor", layout="wide")
 
-# ---------------- LOGIN SYSTEM ----------------
-names = ["Prof. Sharma", "Dr. Khan", "Ms. Patel"]
-usernames = ["sharma", "khan", "patel"]
-passwords = ["1234", "5678", "abcd"]  # demo-only passwords
-
-credentials = {
-    "usernames": {
-        usernames[i]: {"name": names[i], "password": passwords[i]}
-        for i in range(len(usernames))
-    }
-}
-
-authenticator = stauth.Authenticate(
-    credentials,
-    "ai_mentor_dashboard",   # cookie name
-    "abcdef",                # signature key
-    cookie_expiry_days=0
-)
-
-name, authentication_status, username = authenticator.login("Login", "main")
-
-# ---------------- LOGIN CHECK ----------------
-if authentication_status == False:
-    st.error("❌ Invalid ID or password")
-elif authentication_status == None:
-    st.warning("Please enter your ID and password")
-elif authentication_status:
-    authenticator.logout("Logout", "sidebar")
-    st.sidebar.success(f"Welcome {name} 👋")
 
     # ---------------- MAIN APP ----------------
     # -------- Sample Data --------
@@ -156,3 +127,4 @@ elif authentication_status:
                 st.success("Suggested Field: Marketing / Management")
             else:
                 st.success("Suggested Field: Research / Product Design")
+
