@@ -1,130 +1,97 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-import qrcode
-from io import BytesIO
-import streamlit_authenticator as stauth
+import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="AI Mentor", layout="wide")
 
+st.title("🎓 AI Mentor Agent")
+st.write("Automating mentor tasks: Attendance, Progress Reports, Parent Communication, and FAQs.")
 
-    # ---------------- MAIN APP ----------------
-    # -------- Sample Data --------
-    def create_sample_df():
-        data = {
-            "name": ["Aman Kumar", "Neha Sharma", "Ravi Singh", "Priya Patel"],
-            "roll": ["CS21U001", "CS21U002", "CS21U003", "CS21U004"],
-            "parent_name": ["Mr. Kumar", "Ms. Sharma", "Mr. Singh", "Mr. Patel"],
-            "parent_contact": ["+911234567890", "+919876543210", "+919112233445", "+918887766554"],
-            "sgpa_sem1": [6.8, 8.2, 5.0, 7.4],
-            "sgpa_sem2": [7.1, 8.5, 5.5, 7.8],
-            "sgpa_sem3": [6.5, 8.0, 4.8, 7.2],
-            "attendance_count": [220, 270, 180, 285],
-            "total_days": [300, 300, 300, 300]
-        }
-        return pd.DataFrame(data)
+# --- Load CSV Helper ---
+def load_csv(uploaded_file):
+    if uploaded_file is not None:
+        return pd.read_csv(uploaded_file)
+    return None
 
-    # -------- Logic --------
-    def analyze_student(row):
-        sgpas = [row["sgpa_sem1"], row["sgpa_sem2"], row["sgpa_sem3"]]
-        cgpa = sum(sgpas) / len(sgpas)
-        attendance_percent = (row["attendance_count"] / row["total_days"]) * 100
-        alerts = []
-        if cgpa < 6.0:
-            alerts.append("Low CGPA")
-        if attendance_percent < 75:
-            alerts.append("Low Attendance")
-        summary = f"{row['name']} has a CGPA of {cgpa:.2f}. Attendance is {attendance_percent:.1f}%. Alerts: {', '.join(alerts) if alerts else 'None.'}"
-        parent_msg = f"Hello {row['parent_name']}, this is an update about {row['name']}. CGPA: {cgpa:.2f}, Attendance: {attendance_percent:.1f}%. Concerns: {', '.join(alerts) if alerts else 'All good!'}"
-        return cgpa, attendance_percent, alerts, summary, parent_msg
+# --- Tabs ---
+tab1, tab2, tab3, tab4 = st.tabs(["📋 Attendance", "📈 Progress Reports", "📨 Parent Communication", "❓ Ask Mentor"])
 
-    # -------- UI Layout --------
-    st.title("🎓 AI Mentor - University Dashboard")
-    st.write("Prototype that automates mentor tasks: progress tracking, attendance, parent communication, and career guidance.")
+# ---------------- Attendance Tab ----------------
+with tab1:
+    st.header("Attendance Overview")
+    att_file = st.file_uploader("Upload Attendance CSV", type="csv", key="att")
+    att_df = load_csv(att_file)
 
-    # Sidebar upload
-    uploaded_file = st.sidebar.file_uploader("Upload Students CSV", type=["csv"])
-    if st.sidebar.button("Load Demo Data"):
-        df = create_sample_df()
-    else:
-        df = None
-        if uploaded_file:
-            df = pd.read_csv(uploaded_file)
+    if att_df is not None:
+        att_df["Attendance%"] = round((att_df["Attended"] / att_df["Total_Classes"]) * 100, 2)
+        att_df["Status"] = att_df["Attendance%"].apply(lambda x: "At Risk ❌" if x < 75 else "Good ✅")
+        st.dataframe(att_df)
 
-    # Tabs
-    tabs = st.tabs(["📊 Dashboard", "📘 Student Reports", "📝 Teacher Feedback", "📷 QR Attendance", "🔮 Career Prediction", "🧩 Personality Quiz"])
+        st.subheader("At Risk Students (<75%)")
+        st.write(att_df[att_df["Attendance%"] < 75][["Name", "Attendance%"]])
 
-    # --- Dashboard Tab ---
-    with tabs[0]:
-        if df is not None:
-            reports = []
-            for _, row in df.iterrows():
-                cgpa, att, alerts, summary, msg = analyze_student(row)
-                reports.append({
-                    "name": row["name"],
-                    "cgpa": cgpa,
-                    "attendance": att,
-                    "alerts": ", ".join(alerts) if alerts else "None",
-                    "summary": summary,
-                    "parent_msg": msg
-                })
-            report_df = pd.DataFrame(reports)
+# ---------------- Progress Reports Tab ----------------
+with tab2:
+    st.header("Progress Across Semesters")
+    gpa_file = st.file_uploader("Upload GPA CSV", type="csv", key="gpa")
+    gpa_df = load_csv(gpa_file)
 
-            st.subheader("📊 Class Summary")
-            st.write(f"**Average CGPA:** {report_df['cgpa'].mean():.2f}")
-            st.write(f"**Average Attendance:** {report_df['attendance'].mean():.1f}%")
-            st.write(f"**Flagged Students:** {(report_df['alerts'] != 'None').sum()}")
+    if gpa_df is not None:
+        st.dataframe(gpa_df)
 
-            st.bar_chart(report_df.set_index("name")[["cgpa", "attendance"]])
+        student = st.selectbox("Select a student", gpa_df["Name"])
+        row = gpa_df[gpa_df["Name"] == student].iloc[0]
+
+        sems = [col for col in gpa_df.columns if col.startswith("Sem")]
+        scores = [row[col] for col in sems]
+
+        fig, ax = plt.subplots()
+        ax.plot(sems, scores, marker="o")
+        ax.set_title(f"GPA Trend: {student}")
+        ax.set_ylabel("GPA")
+        st.pyplot(fig)
+
+        trend = "Improving 📈" if scores[-1] > scores[-2] else "Declining 📉"
+        st.write(f"Performance Trend: **{trend}**")
+
+# ---------------- Parent Communication Tab ----------------
+with tab3:
+    st.header("Auto-Generate Parent Messages")
+    if 'att_df' in locals() and att_df is not None and 'gpa_df' in locals() and gpa_df is not None:
+        student = st.selectbox("Select student for parent message", att_df["Name"], key="msg")
+        att_row = att_df[att_df["Name"] == student].iloc[0]
+        gpa_row = gpa_df[gpa_df["Name"] == student].iloc[0]
+
+        attendance = att_row["Attendance%"]
+        sems = [col for col in gpa_df.columns if col.startswith("Sem")]
+        prev, now = gpa_row[sems[-2]], gpa_row[sems[-1]]
+
+        if attendance < 75 and now < prev:
+            msg = f"Dear Parent of {student},\n\nYour ward’s attendance is {attendance}% and GPA has declined from {prev} to {now}. Please meet the mentor to discuss steps.\n\nRegards,\nAI Mentor"
+        elif attendance < 75:
+            msg = f"Dear Parent of {student},\n\nThis is to inform you that attendance is {attendance}%, below the 75% requirement. Kindly ensure regular attendance.\n\nRegards,\nAI Mentor"
+        elif now < prev:
+            msg = f"Dear Parent of {student},\n\nWe have observed GPA declined from {prev} to {now}. Please support your ward’s academics.\n\nRegards,\nAI Mentor"
         else:
-            st.info("Upload a CSV or click 'Load Demo Data' to view the dashboard.")
+            msg = f"Dear Parent of {student},\n\nYour ward is performing well with {attendance}% attendance and stable GPA.\n\nRegards,\nAI Mentor"
 
-    # --- Student Reports Tab ---
-    with tabs[1]:
-        if df is not None:
-            st.subheader("👩‍🎓 Student Reports")
-            for _, row in report_df.iterrows():
-                st.markdown(f"### {row['name']}")
-                st.write("📘 **Progress Summary:**", row["summary"])
-                st.write("📩 **Parent Message:**", row["parent_msg"])
-                st.markdown("---")
-        else:
-            st.info("No data available yet.")
+        st.text_area("Generated Message", msg, height=200)
 
-    # --- Teacher Feedback Tab ---
-    with tabs[2]:
-        st.subheader("📝 Teacher Feedback (Prototype)")
-        st.write("Here, teachers can correct/edit AI reports. In the future, AI will learn from this feedback.")
-        feedback = st.text_area("Write feedback about a student report:")
-        if st.button("Submit Feedback"):
-            st.success("Feedback saved (demo only).")
+# ---------------- Ask Mentor Tab ----------------
+with tab4:
+    st.header("Ask Mentor (FAQs)")
+    faq_file = st.file_uploader("Upload FAQ CSV", type="csv", key="faq")
+    faq_df = load_csv(faq_file)
 
-    # --- QR Attendance Tab ---
-    with tabs[3]:
-        st.subheader("📷 QR Attendance (Prototype)")
-        st.write("Students will scan a unique QR code to mark attendance (prevents proxy).")
-        qr = qrcode.make("Attendance QR - Valid for 5 min")
-        buf = BytesIO()
-        qr.save(buf)
-        st.image(buf.getvalue(), caption="Scan to mark attendance (demo QR)")
-
-    # --- Career Prediction Tab ---
-    with tabs[4]:
-        st.subheader("🔮 Career Prediction (Prototype)")
-        st.write("This AI will predict where the student will be after 4 years based on academic & extracurricular progress.")
-        st.info("Example: 'Neha Sharma is likely to pursue a Masters in Data Science based on her CGPA and extracurriculars.'")
-
-    # --- Personality Quiz Tab ---
-    with tabs[5]:
-        st.subheader("🧩 Personality Quiz (Prototype)")
-        st.write("Students answer a short quiz → AI suggests suitable career fields.")
-        q1 = st.radio("Do you prefer working with data or people?", ["Data", "People"])
-        q2 = st.radio("Would you rather solve problems logically or creatively?", ["Logical", "Creative"])
-        if st.button("Submit Quiz"):
-            if q1 == "Data" and q2 == "Logical":
-                st.success("Suggested Field: Data Analyst / Software Engineer")
-            elif q1 == "People" and q2 == "Creative":
-                st.success("Suggested Field: Marketing / Management")
+    if faq_df is not None:
+        question = st.text_input("Ask a question:")
+        if st.button("Get Answer"):
+            found = None
+            for i, row in faq_df.iterrows():
+                if row["question"].lower() in question.lower():
+                    found = row["answer"]
+                    break
+            if found:
+                st.success(found)
             else:
-                st.success("Suggested Field: Research / Product Design")
-
+                st.warning("Sorry, I don’t know the answer. Ask your mentor.")
